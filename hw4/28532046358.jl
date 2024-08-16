@@ -26,7 +26,7 @@ const student_number::Int64 = 28532046358  ## <---replace 0 by your student_numb
 function objective(x::AbstractVector)::Float64
     return (x[1]^2 + x[2] - 11)^2 + (x[1] + x[2]^2 - 7)^2
 end
-## write your constraints, mind the args please!!!
+## write your constraints, mind the args please!!! 
 function constraints(x::AbstractVector)::Tuple{Float64,Float64}
     ## You will use some penalty functions here, 
     ## Make sure that you pick up the rigth penalty functions
@@ -35,9 +35,9 @@ function constraints(x::AbstractVector)::Tuple{Float64,Float64}
     ## you should see  something like at the end::::  constraints([1.0, 2.0]) = (0, 1111)
     ## the numbers on the right may change depending on your penalty functions.
     # Constraint for norm([x,y]) <= 3.6
-    norm_penalty = (max(0, norm(x) - 3.6))^2
+    norm_penalty = 5*(max(0, norm(x) - 3.6))^2
     # Constraint for x + y = 5
-    equality_penalty = ((x[1] + x[2] - 5))^2
+    equality_penalty = 5*((x[1] + x[2] - 5))^2
     return (norm_penalty, equality_penalty)
 end
 
@@ -80,24 +80,18 @@ function minimize(objective::Function,
     ### Update the gradients in a for loop ###
     x = copy(x_init)
     for iter in 1:max_iter
-        if iter > 800
-            lr = 0.000613
-        end
+        # if iter > 800
+        #     lr = 0.000613
+        # end
         norm_penalty, equality_penalty = constraints(x)
         grad = Zygote.gradient(x -> begin
-            objective(x) + λ * norm_penalty + μ * equality_penalty
-        end, x)[1]
+                objective(x) + λ * norm_penalty + μ * equality_penalty
+            end, x)[1]
         x -= lr * grad
-        # @info "Iteration $iter: Objective = $objective_value, Norm Penalty = $norm_penalty, Equality Penalty = $equality_penalty, Gradient Norm = $(norm(grad))"
         if norm(lr * grad) < stopping_criterion
-            @info "Stopping early"
-            const_1, const_2 = x
-            println("const_1 $const_1, const_2 $const_2")
             break
         end
     end
-    const_1, const_2 = x
-    println("const_1 $const_1, const_2 $const_2")
     return x
 end
 
@@ -107,17 +101,16 @@ minimize(x -> objective(x), x -> constraints(x), 10.0, 10.0, randn(2); lr=0.001,
 
 function unit_test_2()
     @info "The test started"
-    x_init = 0
-    @noinline for i in ProgressBar(1:100)
+    @noinline for i in ProgressBar(1:10000)
         Random.seed!(i)
-        x_init = minimize(x->objective(x),x->constraints(x), 10.0, 10.0, randn(2); lr = 0.00008, max_iter = 1000)
+        x_init = minimize(x -> objective(x), x -> constraints(x), 10.0, 10.0, randn(2); lr=0.00008, max_iter=1000)
         const_1, const_2 = norm(x_init), sum(x_init)
-        if norm([3,2])-1e-5 < const_1 < norm([3,2]) && isapprox(const_2, 5.0; atol = .01)
+        if norm([3, 2]) - 1e-5 < const_1 < norm([3, 2]) && isapprox(const_2, 5.0; atol=0.01)
             @info "Ok buddy, you are doing goooooood!!! the point is $(x_init)"
             return 1
         end
     end
-    @info "I am sorry pal! something is wrong with your implementations, point is $(x_init)"
+    @info "I am sorry pal! something is wrong with your implementations"
     return 0
 end
 
